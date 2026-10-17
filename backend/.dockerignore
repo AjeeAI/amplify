@@ -1,0 +1,10 @@
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.venv
+venv
+amplify.db
+.git
+.gitignore
+test_api.py
