@@ -7,7 +7,6 @@ node_modules/
 .expo/
 dist/
 web-build/
-expo-env.d.ts
 
 # Native
 .kotlin/
@@ -39,3 +38,12 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Python backend
+backend/__pycache__/
+backend/*/__pycache__/
+*.pyc
+*.db
+backend/amplify.db
+backend/venv/
+backend/.env
