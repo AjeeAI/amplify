@@ -3,6 +3,7 @@ FROM python:3.11-slim
 # Prevent Python from writing .pyc files and buffer stdout/stderr
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV PORT=8000
 
 WORKDIR /app
 
@@ -20,5 +21,5 @@ COPY . .
 
 EXPOSE 8000
 
-# Seed database on startup if empty, then launch Uvicorn
-CMD python seed.py && uvicorn main:app --host 0.0.0.0 --port 8000
+# Seed database on startup if empty, then launch Uvicorn using dynamic $PORT (Render compatible)
+CMD sh -c "python seed.py && uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"
