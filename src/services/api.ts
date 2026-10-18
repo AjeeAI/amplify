@@ -1,8 +1,8 @@
 import { Campaign, ActivityEvent, UserProfile } from '../types';
 import { MOCK_CAMPAIGNS, MOCK_ACTIVITY_EVENTS, USER_ALEX_MORGAN } from '../constants/mockData';
 
-// API Base URL (configurable)
-const BASE_URL = 'http://localhost:8000/api/v1';
+// Live Production Backend URL on Render
+const BASE_URL = 'https://amplify-mdmb.onrender.com/api/v1';
 
 let authToken: string | null = null;
 
