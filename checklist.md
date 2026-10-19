@@ -22,7 +22,13 @@ Mobile Frontend: React Native + Expo (SDK 58)
 - [x] **Endpoint: `POST /api/v1/auth/register`**: Creates unified user account (Backer/Creator), initializes Day 1 streak.
 - [x] **Endpoint: `POST /api/v1/auth/login`**: Validates credentials and returns JWT Bearer token.
 - [x] **Endpoint: `GET /api/v1/auth/me`**: Returns authenticated user profile.
-- [x] **Frontend Integration**: [`src/screens/AuthModal.tsx`](file:///c:/dev/amplify/src/screens/AuthModal.tsx) communicates with login/register endpoints and persists token in [`src/services/api.ts`](file:///c:/dev/amplify/src/services/api.ts).
+- [x] **Frontend Integration**: [`src/screens/AuthModal.tsx`](file:///c:/dev/amplify/src/screens/AuthModal.tsx):
+  - Form inputs default to clean empty fields with full name input on Sign Up.
+  - Quick-fill demo account pills (*Alex Morgan - Backer* / *Maya Lin - Creator*) for instant one-tap testing.
+  - Real-time password strength meter and toggleable password visibility.
+  - Descriptive backend error banner displaying 401/400 messages (e.g. *"Incorrect email or password"*, *"An account with this email already exists"*).
+  - Loading spinner indicator during network transmission.
+  - Automatically fetches profile and updates [`App.tsx`](file:///c:/dev/amplify/App.tsx) and [`ProfileScreen.tsx`](file:///c:/dev/amplify/src/screens/ProfileScreen.tsx) upon login.
 
 ---
 
@@ -86,3 +92,23 @@ Mobile Frontend: React Native + Expo (SDK 58)
 - [x] **TypeScript Strict Compilation**: `npx tsc --noEmit` $\rightarrow$ **0 errors**.
 - [x] **Expo Configuration Validation**: `npx expo-doctor` $\rightarrow$ **21/21 checks passed**.
 - [x] **Offline Resilience**: Built-in fallbacks ensure zero crashes if mobile network drops.
+
+---
+
+## 📡 9. Phase 2: Social API & Broadcast Delivery Integrations
+- [x] **Programmatic Ad Deployment**: `POST /api/v1/broadcast/deploy` dispatches simulated ad campaigns across Meta Graph & Google Ads ($1 = 27 impressions).
+- [x] **Live Broadcast Telemetry**: `GET /api/v1/campaigns/{id}/broadcast-telemetry` returns real-time streaming progress, impressions delivered, and geo-nodes.
+- [x] **Meta/Google Webhook Ingestion**: `POST /api/v1/webhooks/ad-telemetry` receives programmatic ad delivery events, increments campaign impressions, and publishes activity updates.
+- [x] **In-App Notification & Push Alerts**: `GET /api/v1/notifications/stream` and `POST /api/v1/notifications/register-device` deliver real-time milestone alerts and streak reminders.
+- [x] **Frontend Live Ticking Telemetry**: [`src/screens/SuccessBlastModal.tsx`](file:///c:/dev/amplify/src/screens/SuccessBlastModal.tsx) and [`src/screens/CampaignDetailModal.tsx`](file:///c:/dev/amplify/src/screens/CampaignDetailModal.tsx) display live ticking impression counters, connected Meta/Google ad set IDs, and verified local hotspots (*Beacon Hill*, *Back Bay*, *Cambridge*).
+
+---
+
+## 🛡️ 10. Phase 3: Decentralized Verification & Enterprise Matching
+- [x] **Corporate CSR Matching Pools**:
+  - `GET /api/v1/matching-pools` delivers institutional grantor funds (*Patagonia 1% For The Planet*, *Google.org Civic Tech Fund*, *Ford Foundation*).
+  - `POST /api/v1/matching-pools/apply-match` dynamically computes matching grants (e.g. $25 pledge $\rightarrow$ +$25 match = $50 total / 1,350 reach).
+- [x] **Frontend Match Bonus UI**: [`src/screens/ContributionModal.tsx`](file:///c:/dev/amplify/src/screens/ContributionModal.tsx) displays live corporate match calculation cards and updates pledge totals.
+- [x] **Cryptographically Verifiable Impact Ledger ("Proof of Reach")**:
+  - `GET /api/v1/ledger/blocks` and `GET /api/v1/ledger/proof/{contribution_id}` generate verifiable SHA-256 block hashes, previous block hashes, Merkle roots, and Ed25519 signatures.
+- [x] **Public Ledger Verification UI**: [`src/screens/ImpactCertificateModal.tsx`](file:///c:/dev/amplify/src/screens/ImpactCertificateModal.tsx) displays interactive cryptographic proof receipts with expandable on-chain verification details.

@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 from database import engine, Base
 import models
-from routers import auth, campaigns, calculator, ai, users
+from routers import auth, campaigns, calculator, ai, users, broadcast, notifications, matching, ledger
 
 # Create all database tables
 Base.metadata.create_all(bind=engine)
@@ -35,6 +35,10 @@ app.include_router(campaigns.router, prefix=settings.API_V1_STR)
 app.include_router(calculator.router, prefix=settings.API_V1_STR)
 app.include_router(ai.router, prefix=settings.API_V1_STR)
 app.include_router(users.router, prefix=settings.API_V1_STR)
+app.include_router(broadcast.router, prefix=settings.API_V1_STR)
+app.include_router(notifications.router, prefix=settings.API_V1_STR)
+app.include_router(matching.router, prefix=settings.API_V1_STR)
+app.include_router(ledger.router, prefix=settings.API_V1_STR)
 
 @app.get("/", tags=["Health"])
 def root():

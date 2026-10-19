@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { Feather, FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { Colors, Radii, Shadows } from '../constants/theme';
@@ -15,7 +16,7 @@ import { ApiService } from '../services/api';
 interface AuthModalProps {
   visible: boolean;
   onClose: () => void;
-  onAuthSuccess: (role: 'backer' | 'creator') => void;
+  onAuthSuccess: (role: 'backer' | 'creator', user?: any) => void;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
@@ -25,12 +26,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 }) => {
   const [authMode, setAuthMode] = useState<'signup' | 'login'>('signup');
   const [selectedRole, setSelectedRole] = useState<'backer' | 'creator'>('backer');
-  const [email, setEmail] = useState<string>('alex.morgan@civicpulse.org');
-  const [password, setPassword] = useState<string>('Ampl!fy2026');
+  const [fullName, setFullName] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Compute password strength
   const getPasswordStrength = (pwd: string): { level: string; percent: '25%' | '60%' | '100%'; color: string } => {
+    if (!pwd) return { level: 'None', percent: '25%', color: '#94A3B8' };
     if (pwd.length < 6) return { level: 'Weak', percent: '25%', color: '#EF4444' };
     if (pwd.length < 9) return { level: 'Medium', percent: '60%', color: '#F59E0B' };
     return { level: 'Strong', percent: '100%', color: '#10B981' };
@@ -38,17 +43,63 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const strength = getPasswordStrength(password);
 
+  const fillDemoAccount = (role: 'backer' | 'creator') => {
+    setErrorMessage(null);
+    if (role === 'backer') {
+      setEmail('alex.morgan@civicpulse.org');
+      setPassword('Ampl!fy2026');
+      setSelectedRole('backer');
+      setAuthMode('login');
+    } else {
+      setEmail('maya.lin@riverwatch.org');
+      setPassword('RiverWatch2026');
+      setSelectedRole('creator');
+      setAuthMode('login');
+    }
+  };
+
   const handleSubmit = async () => {
+    setErrorMessage(null);
+    const cleanEmail = email.trim();
+    const cleanPassword = password.trim();
+    const cleanName = fullName.trim();
+
+    if (!cleanEmail) {
+      setErrorMessage('Please enter your email address.');
+      return;
+    }
+
+    if (!cleanPassword) {
+      setErrorMessage('Please enter your password.');
+      return;
+    }
+
+    if (authMode === 'signup' && !cleanName) {
+      setErrorMessage('Please enter your full name.');
+      return;
+    }
+
+    if (authMode === 'signup' && cleanPassword.length < 6) {
+      setErrorMessage('Password must be at least 6 characters long.');
+      return;
+    }
+
+    setIsLoading(true);
     try {
+      let res;
       if (authMode === 'signup') {
-        const name = selectedRole === 'backer' ? 'Alex Morgan' : 'Maya Lin';
-        await ApiService.register(name, email, password);
+        res = await ApiService.register(cleanName, cleanEmail, cleanPassword);
       } else {
-        await ApiService.login(email, password);
+        res = await ApiService.login(cleanEmail, cleanPassword);
       }
-    } catch {}
-    onAuthSuccess(selectedRole);
-    onClose();
+
+      setIsLoading(false);
+      onAuthSuccess(selectedRole, res?.user);
+      onClose();
+    } catch (err: any) {
+      setIsLoading(false);
+      setErrorMessage(err.message || 'Authentication failed. Please verify credentials.');
+    }
   };
 
   return (
@@ -220,12 +271,71 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
           {/* Email & Password Form */}
           <View style={styles.formContainer}>
+            {/* Quick Demo Pre-fill Selector */}
+            <View style={styles.demoAccountsContainer}>
+              <Text style={styles.demoAccountsLabel}>⚡ Quick Test with Demo Accounts:</Text>
+              <View style={styles.demoButtonsRow}>
+                <TouchableOpacity
+                  style={[styles.demoBtn, email === 'alex.morgan@civicpulse.org' && styles.demoBtnActive]}
+                  onPress={() => fillDemoAccount('backer')}
+                  activeOpacity={0.8}
+                >
+                  <Feather name="zap" size={12} color={email === 'alex.morgan@civicpulse.org' ? '#FFFFFF' : Colors.primary} />
+                  <Text style={[styles.demoBtnText, email === 'alex.morgan@civicpulse.org' && styles.demoBtnTextActive]}>
+                    Alex (Backer)
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.demoBtn, email === 'maya.lin@riverwatch.org' && styles.demoBtnActive]}
+                  onPress={() => fillDemoAccount('creator')}
+                  activeOpacity={0.8}
+                >
+                  <Feather name="layers" size={12} color={email === 'maya.lin@riverwatch.org' ? '#FFFFFF' : Colors.primary} />
+                  <Text style={[styles.demoBtnText, email === 'maya.lin@riverwatch.org' && styles.demoBtnTextActive]}>
+                    Maya (Creator)
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Error Banner */}
+            {errorMessage && (
+              <View style={styles.errorBanner}>
+                <Feather name="alert-circle" size={16} color="#DC2626" />
+                <Text style={styles.errorBannerText}>{errorMessage}</Text>
+              </View>
+            )}
+
+            {/* Full Name Field (Sign Up Only) */}
+            {authMode === 'signup' && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Full Name</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={fullName}
+                  onChangeText={(val) => {
+                    setFullName(val);
+                    if (errorMessage) setErrorMessage(null);
+                  }}
+                  placeholder="e.g. Alex Morgan"
+                  placeholderTextColor={Colors.textMuted}
+                  autoCapitalize="words"
+                />
+              </View>
+            )}
+
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Work or Civic Email</Text>
               <TextInput
                 style={styles.textInput}
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(val) => {
+                  setEmail(val);
+                  if (errorMessage) setErrorMessage(null);
+                }}
+                placeholder="name@civicpulse.org"
+                placeholderTextColor={Colors.textMuted}
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
@@ -237,7 +347,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <TextInput
                   style={styles.passwordInput}
                   value={password}
-                  onChangeText={setPassword}
+                  onChangeText={(val) => {
+                    setPassword(val);
+                    if (errorMessage) setErrorMessage(null);
+                  }}
+                  placeholder="••••••••"
+                  placeholderTextColor={Colors.textMuted}
                   secureTextEntry={!showPassword}
                 />
                 <TouchableOpacity
@@ -253,35 +368,44 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </View>
 
               {/* Visual Password Strength Indicator */}
-              <View style={styles.strengthBox}>
-                <View style={styles.strengthTrack}>
-                  <View
-                    style={[
-                      styles.strengthBar,
-                      { width: strength.percent, backgroundColor: strength.color },
-                    ]}
-                  />
+              {authMode === 'signup' && (
+                <View style={styles.strengthBox}>
+                  <View style={styles.strengthTrack}>
+                    <View
+                      style={[
+                        styles.strengthBar,
+                        { width: strength.percent, backgroundColor: strength.color },
+                      ]}
+                    />
+                  </View>
+                  <Text style={[styles.strengthText, { color: strength.color }]}>
+                    Strength: {strength.level}
+                  </Text>
                 </View>
-                <Text style={[styles.strengthText, { color: strength.color }]}>
-                  Strength: {strength.level}
-                </Text>
-              </View>
+              )}
             </View>
 
             {/* Submit Button */}
             <TouchableOpacity
-              style={styles.submitBtn}
+              style={[styles.submitBtn, isLoading && styles.submitBtnDisabled]}
               onPress={handleSubmit}
+              disabled={isLoading}
               activeOpacity={0.88}
             >
-              <Text style={styles.submitBtnText}>
-                {authMode === 'signup'
-                  ? selectedRole === 'backer'
-                    ? 'Start Backing & Claim $5'
-                    : 'Start Creator Project'
-                  : 'Sign In to Dashboard'}
-              </Text>
-              <Feather name="arrow-right" size={16} color="#FFFFFF" />
+              {isLoading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <>
+                  <Text style={styles.submitBtnText}>
+                    {authMode === 'signup'
+                      ? selectedRole === 'backer'
+                        ? 'Start Backing & Claim $5'
+                        : 'Start Creator Project'
+                      : 'Sign In to Dashboard'}
+                  </Text>
+                  <Feather name="arrow-right" size={16} color="#FFFFFF" />
+                </>
+              )}
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -572,9 +696,69 @@ const styles = StyleSheet.create({
     marginTop: 8,
     ...Shadows.elevated,
   },
+  submitBtnDisabled: {
+    opacity: 0.7,
+  },
   submitBtnText: {
     fontSize: 14,
     fontWeight: '800',
     color: '#FFFFFF',
+  },
+  demoAccountsContainer: {
+    backgroundColor: '#F1F5F9',
+    borderRadius: Radii.md,
+    padding: 10,
+    marginBottom: 4,
+  },
+  demoAccountsLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.textSecondary,
+    marginBottom: 8,
+  },
+  demoButtonsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  demoBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: Radii.sm,
+    paddingVertical: 7,
+  },
+  demoBtnActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  demoBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  demoBtnTextActive: {
+    color: '#FFFFFF',
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    borderRadius: Radii.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  errorBannerText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#B91C1C',
   },
 });

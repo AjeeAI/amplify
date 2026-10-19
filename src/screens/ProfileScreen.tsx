@@ -16,11 +16,13 @@ import { ApiService } from '../services/api';
 interface ProfileScreenProps {
   onStartCampaignPress: () => void;
   onExplorePress: () => void;
+  authenticatedUser?: any;
 }
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   onStartCampaignPress,
   onExplorePress,
+  authenticatedUser,
 }) => {
   // Role switcher: 'backed' (Alex Morgan) vs 'my_campaigns' (Maya Lin)
   const [roleMode, setRoleMode] = useState<'backed' | 'my_campaigns'>('backed');
@@ -35,14 +37,16 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       } catch {}
     };
     fetchDashboard();
-  }, []);
+  }, [authenticatedUser]);
 
   const baseUser = roleMode === 'backed' ? USER_ALEX_MORGAN : USER_MAYA_LIN;
   const currentUser = {
     ...baseUser,
-    streakDays: dashboardData?.streak_count || baseUser.streakDays,
-    totalDonated: dashboardData?.total_donated || baseUser.totalDonated,
-    totalImpressionsAchieved: dashboardData?.total_impressions_achieved || baseUser.totalImpressionsAchieved,
+    name: authenticatedUser?.full_name || baseUser.name,
+    email: authenticatedUser?.email || baseUser.email,
+    streakDays: dashboardData?.streak_count ?? authenticatedUser?.streak_count ?? baseUser.streakDays,
+    totalDonated: dashboardData?.total_donated ?? baseUser.totalDonated,
+    totalImpressionsAchieved: dashboardData?.total_impressions_achieved ?? baseUser.totalImpressionsAchieved,
   };
 
   return (

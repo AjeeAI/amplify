@@ -62,6 +62,7 @@ export interface ActivityEvent {
 export interface UserProfile {
   id: string;
   name: string;
+  email?: string;
   handle: string;
   avatar: string;
   role: 'Alex Morgan' | 'Maya Lin';

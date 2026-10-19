@@ -26,8 +26,23 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({ onEventPress }) 
   useEffect(() => {
     const fetchActivities = async () => {
       try {
-        const liveEvents = await ApiService.getActivity();
-        setEvents(liveEvents);
+        const [liveEvents, notifs] = await Promise.all([
+          ApiService.getActivity(),
+          ApiService.getNotificationStream(),
+        ]);
+
+        const notifEvents: ActivityEvent[] = (notifs || []).map((n: any) => ({
+          id: n.id,
+          type: n.notification_type === 'MATCH_BONUS' ? 'match_bonus' : 'amplification',
+          title: n.title,
+          subtitle: n.message,
+          timestamp: 'Just now',
+          icon: n.notification_type === 'MATCH_BONUS' ? 'gift' : 'radio',
+          iconBg: n.notification_type === 'MATCH_BONUS' ? '#10B981' : '#4F46E5',
+          badgeText: n.notification_type === 'MATCH_BONUS' ? 'Corporate Match' : 'Broadcast Milestone',
+        }));
+
+        setEvents([...notifEvents, ...liveEvents]);
       } catch {}
     };
     fetchActivities();

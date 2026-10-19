@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -34,6 +34,22 @@ export const ContributionModal: React.FC<ContributionModalProps> = ({
   const [pledgeImpressions, setPledgeImpressions] = useState<number>(675);
   const [selectedPayment, setSelectedPayment] = useState<'apple' | 'google' | 'card'>('apple');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [matchInfo, setMatchInfo] = useState<any>(null);
+
+  useEffect(() => {
+    if (!campaign || pledgeAmount <= 0) return;
+    let isMounted = true;
+    const fetchMatch = async () => {
+      try {
+        const data = await ApiService.applyCorporateMatch(campaign.id, pledgeAmount);
+        if (isMounted) setMatchInfo(data);
+      } catch {}
+    };
+    fetchMatch();
+    return () => {
+      isMounted = false;
+    };
+  }, [campaign, pledgeAmount]);
 
   const handlePledgeChange = (amount: number, impressions: number) => {
     setPledgeAmount(amount);
@@ -44,22 +60,25 @@ export const ContributionModal: React.FC<ContributionModalProps> = ({
     if (pledgeAmount <= 0) return;
     setIsProcessing(true);
 
+    const totalImpressions = matchInfo ? matchInfo.total_impressions : pledgeImpressions;
+    const totalAmplified = matchInfo ? matchInfo.total_amplified : pledgeAmount;
+
     try {
       const result = await ApiService.contribute(campaign.id, pledgeAmount, selectedPayment);
       setIsProcessing(false);
       onPaymentSuccess({
-        amount: pledgeAmount,
-        impressions: result.contribution?.impressions_generated || pledgeImpressions,
+        amount: totalAmplified,
+        impressions: totalImpressions,
         campaign: {
           ...campaign,
-          currentAmount: result.new_amount_raised || (campaign.currentAmount + pledgeAmount),
+          currentAmount: result.new_amount_raised || (campaign.currentAmount + totalAmplified),
         },
       });
     } catch {
       setIsProcessing(false);
       onPaymentSuccess({
-        amount: pledgeAmount,
-        impressions: pledgeImpressions,
+        amount: totalAmplified,
+        impressions: totalImpressions,
         campaign,
       });
     }
@@ -110,6 +129,23 @@ export const ContributionModal: React.FC<ContributionModalProps> = ({
               initialAmount={pledgeAmount}
               onAmountChange={handlePledgeChange}
             />
+
+            {/* Phase 3: Corporate CSR Matching Bonus Card */}
+            {matchInfo && (
+              <View style={styles.matchingBonusCard}>
+                <View style={styles.matchingBonusHeader}>
+                  <View style={styles.matchingBonusBadge}>
+                    <Feather name="gift" size={12} color="#FFFFFF" />
+                    <Text style={styles.matchingBonusBadgeText}>{matchInfo.multiplier_label || '2x Match Activated'}</Text>
+                  </View>
+                  <Text style={styles.matchingSponsorText}>Sponsored by {matchInfo.sponsor_name}</Text>
+                </View>
+                <Text style={styles.matchingFormulaText}>
+                  Your ${pledgeAmount} is doubled with +${matchInfo.match_amount} matching grant ={' '}
+                  <Text style={styles.matchingHighlight}>${matchInfo.total_amplified} Total ({matchInfo.total_impressions.toLocaleString()} reach)</Text>!
+                </Text>
+              </View>
+            )}
 
             {/* Platform Tip Transparency */}
             <View style={styles.tipTransparencyCard}>
@@ -200,12 +236,16 @@ export const ContributionModal: React.FC<ContributionModalProps> = ({
           <View style={styles.footerBar}>
             <View style={styles.totalRow}>
               <View>
-                <Text style={styles.totalLabel}>Total Pledge</Text>
+                <Text style={styles.totalLabel}>
+                  {matchInfo ? `You Pay: $${pledgeAmount} (Total: $${matchInfo.total_amplified})` : 'Total Pledge'}
+                </Text>
                 <Text style={styles.totalAmount}>${pledgeAmount}.00</Text>
               </View>
               <View style={styles.reachGainBox}>
                 <Feather name="radio" size={12} color="#92400E" />
-                <Text style={styles.reachGainText}>+{pledgeImpressions} reach</Text>
+                <Text style={styles.reachGainText}>
+                  +{matchInfo ? matchInfo.total_impressions.toLocaleString() : pledgeImpressions.toLocaleString()} reach
+                </Text>
               </View>
             </View>
 
@@ -463,5 +503,48 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
     color: '#78350F',
+  },
+  matchingBonusCard: {
+    backgroundColor: '#EEF2FF',
+    borderWidth: 1.5,
+    borderColor: '#C7D2FE',
+    borderRadius: Radii.lg,
+    padding: 12,
+    marginVertical: 10,
+  },
+  matchingBonusHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  matchingBonusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radii.pill,
+  },
+  matchingBonusBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  matchingSponsorText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.primaryDark,
+  },
+  matchingFormulaText: {
+    fontSize: 12,
+    color: Colors.textPrimary,
+    lineHeight: 18,
+    fontWeight: '500',
+  },
+  matchingHighlight: {
+    fontWeight: '800',
+    color: Colors.primaryDark,
   },
 });

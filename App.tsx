@@ -42,6 +42,7 @@ export default function App() {
 
   // Auth Modal (SCREEN_10 & SCREEN_12)
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
+  const [authenticatedUser, setAuthenticatedUser] = useState<any>(null);
 
   // Handlers
   const handleOpenDetail = (campaign: Campaign) => {
@@ -115,6 +116,7 @@ export default function App() {
             <ProfileScreen
               onStartCampaignPress={() => setCurrentTab('create')}
               onExplorePress={() => setCurrentTab('explore')}
+              authenticatedUser={authenticatedUser}
             />
           )}
         </View>
@@ -156,7 +158,10 @@ export default function App() {
         <AuthModal
           visible={showAuthModal}
           onClose={() => setShowAuthModal(false)}
-          onAuthSuccess={(role) => {
+          onAuthSuccess={(role, user) => {
+            if (user) {
+              setAuthenticatedUser(user);
+            }
             if (role === 'creator') {
               setCurrentTab('profile');
             }
